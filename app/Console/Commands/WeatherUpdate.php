@@ -24,7 +24,7 @@ class WeatherUpdate extends Command
                 if ($coords) {
                     $city->update($coords);
                 } else {
-                    $this->warn("Nem található koordináta: {$city->name}");
+                    $this->warn("Cannot find coordinates: {$city->name}");
                     continue;
                 }
             }
@@ -39,12 +39,12 @@ class WeatherUpdate extends Command
                     'city_id' => $city->id,
                     'temperature' => $temp,
                 ]);
-                $this->info("Frissítve: {$city->name} - {$temp}°C");
+                $this->info("Updated: {$city->name} - {$temp}°C");
             } else {
-                $this->warn("Nem sikerült hőmérséklet: {$city->name}");
+                $this->warn("Failed to get temperature: {$city->name}");
             }
         }
 
-        $this->info('Minden mérés frissítve!');
+        $this->info('All measurements updated!');
     }
 }

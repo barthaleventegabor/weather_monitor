@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Controllers\web;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,6 +10,7 @@ use App\Models\City;
 class CityController extends Controller
 {
     protected $geocoding;
+
     public function __construct(GeocodingService $geocoding)
     {
         $this->geocoding = $geocoding;
@@ -17,30 +18,41 @@ class CityController extends Controller
 
     public function index()
     {
-        $cities = City::all();
-        return response()->json($cities);
+        $cities = City::with('weatherMeasurements')->get();
+        return view('cities.index', compact('cities'));
     }
 
     public function store(Request $request)
     {
+
         $request->validate([
             'name' => 'required|string',
             'country' => 'nullable|string',
         ]);
 
+
         $coords = $this->geocoding->getCoordinates($request->name);
 
-        $city = City::create([
+        if (!$coords) {
+ 
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['name' => 'A megadott város nem található.']);
+        }
+
+        City::create([
             'name' => $request->name,
             'country' => $request->country,
-            'latitude' => $coords['latitude'] ?? null,
-            'longitude' => $coords['longitude'] ?? null,
+            'latitude' => $coords['latitude'],
+            'longitude' => $coords['longitude'],
         ]);
 
-        return response()->json([
-            'message' => 'City created successfully',
-            'city' => $city
-        ], 201); 
+        return redirect()->back()->with('success', 'City added successfully!');
     }
- 
+
+    public function destroy(City $city)
+    {
+        $city->delete();
+        return redirect()->back()->with('success', 'City deleted successfully!');
+    }
 }

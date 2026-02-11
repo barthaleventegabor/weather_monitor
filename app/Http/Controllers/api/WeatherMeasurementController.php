@@ -15,8 +15,8 @@ class WeatherMeasurementController extends Controller
         return response()->json($measurements);
     }
 
-    public function indexByCity($cityId){
-        $measurements = WeatherMeasurement::where('city_id', $cityId)
+    public function indexByCity($city_id){
+        $measurements = WeatherMeasurement::where('city_id', $city_id)
             ->orderBy('created_at', 'desc')
             ->get();
 
