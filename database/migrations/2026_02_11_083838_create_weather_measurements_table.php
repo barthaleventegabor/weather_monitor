@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('weather_measurements', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('city_id')->constrained()->onDelete('cascade');
+            $table->float('temperature');
+            $table->timestamp('measured_at');
             $table->timestamps();
         });
     }

@@ -6,5 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WeatherMeasurement extends Model
 {
-    //
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
 }
