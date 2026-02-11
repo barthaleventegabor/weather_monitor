@@ -1,59 +1,228 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Weather Monitor (Laravel)
 
-## About Laravel
+Egy egyszerű Laravel webalkalmazás, amiben **városokat** tudsz kezelni (név + ország + koordináták), majd egy Artisan parancs segítségével **időjárás méréseket** (hőmérséklet) tudsz lekérni és eltárolni. A **Weather Dashboard** oldalon városonként látszik a legutóbbi hőmérséklet és egy **Chart.js** grafikon, ami az utolsó 5–10 (jelenleg: max 10) mérést ábrázolja.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Az alkalmazás külső API-kat használ az Open‑Meteo szolgáltatásból:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Geokódolás (város → latitude/longitude): `geocoding-api.open-meteo.com`
+- Aktuális időjárás (koordináták → current temperature): `api.open-meteo.com`
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Funkciók
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Városok (Cities)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Város hozzáadása (City Name + Country)
+- A város koordinátáit (latitude/longitude) automatikusan lekéri geokódolással
+- Duplikáció védelem: ugyanaz a `name + country` kombináció nem vehető fel kétszer
+- Város törlése
+- Lista nézetben: városnév, ország, latitude, longitude
 
-## Laravel Sponsors
+### Időjárás mérések (Weather measurements)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- Mérések tárolása városonként (hőmérséklet + timestamp)
+- `weather:update` Artisan parancs: minden városhoz lekéri az aktuális hőmérsékletet és elmenti
+	- Ha egy városhoz nincs elmentett koordináta, először geokódolással bepótolja
 
-### Premium Partners
+### Weather Dashboard
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- Városonként megjeleníti a legutóbbi hőmérsékletet
+- Bónusz: városonként egy Chart.js grafikon az utolsó max 10 mérésből
+- A grafikonok CDN-ről töltik a Chart.js-t (nincs külön NPM dependency erre)
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Oldalak és navigáció
 
-## Code of Conduct
+### Web route-ok
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `GET /` → Cities oldal (alapértelmezett kezdőlap)
+- `GET /cities` → Cities oldal (városlista + felvétel + törlés)
+- `POST /cities` → város felvétele
+- `DELETE /cities/{city}` → város törlése
+- `GET /dashboard` → Weather Dashboard (városlista + latest temp + chartok)
 
-## Security Vulnerabilities
+### API route-ok
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `GET /api/weather/{city_id}` → az adott város mérései JSON-ban (csökkenő `created_at` sorrendben)
+	- Ha nincs mérés, 404-et ad vissza egy üzenettel.
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Adatmodell (röviden)
+
+### `cities` tábla
+
+- `name` (string)
+- `country` (string)
+- `latitude` (float/decimal)
+- `longitude` (float/decimal)
+
+### `weather_measurements` tábla
+
+- `city_id` (FK → cities)
+- `temperature` (decimal(5,2))
+- `created_at`, `updated_at`
+
+Kapcsolat:
+
+- Egy `City`-hez több `WeatherMeasurement` tartozik (`hasMany`).
+
+---
+
+## Technológia stack
+
+- PHP 8.2+
+- Laravel 12
+- SQLite (alapértelmezett `.env.example` szerint)
+- Frontend: a jelenlegi oldalak Bootstrap 5 CDN-t használnak
+- Chart: Chart.js CDN
+- Vite + Tailwind be van készítve a projektben (a build pipeline része), de a fenti oldalak megjelenése jelenleg Bootstrap alapú.
+
+---
+
+## Telepítés és futtatás (Windows / általános)
+
+### 1) Függőségek telepítése
+
+```bash
+composer install
+```
+
+### 2) `.env` létrehozása és app key generálás
+
+Az env.example kapcsolódási paramétereit módosítottam, az env szerint, hogy ne sqlite legyen az alapértelmezett adatbázis. Ezt azért tettem, mivel tesztkörnyezetben nem tartalmaz szenzitív adatokat.
+
+```bash
+copy .env.example .env
+php artisan key:generate
+```
+
+### 3) Adatbázis migrációk
+
+
+```bash
+php artisan migrate
+```
+
+Megjegyzés: a projektben a session/cache/queue driver is adatbázisra van állítva, ezért a migrációk szükségesek.
+
+### 4) (Opcionális) seed
+
+```bash
+php artisan db:seed
+```
+
+Van egy `TestCitySeeder`, ami például Budapestet és Londont felveszi (koordináta nélkül) – a `weather:update` parancs ezt később bepótolja.
+
+
+### 5) Szerver indítása
+
+```bash
+php artisan serve
+```
+
+### 6) Mérések parancs óránkénti futtatása, vagy azonnali futtatás
+
+Mérés futtatása:
+
+```bash
+php artisan weather:update
+```
+
+Mérések automatikus(óránkénti)futtatása:
+
+```bash
+php artisan schedule:work
+```
+
+
+Ezután:
+
+- Kezdőlap: `http://127.0.0.1:8000/` (Cities)
+- Dashboard: `http://127.0.0.1:8000/dashboard`
+
+
+
+
+
+---
+
+## Használat (tipikus flow)
+
+### Város felvétele
+
+1. Menj a Cities oldalra (`/` vagy `/cities`).
+2. Add meg a város nevét és az országot.
+3. Mentéskor a rendszer geokódolással lekéri a koordinátákat.
+4. Ha nem található a város, validációs hibát kapsz.
+
+### Időjárás frissítése (mérések létrehozása)
+
+Futtasd:
+
+```bash
+php artisan weather:update
+```
+
+Ez végigmegy az összes városon:
+
+- ha hiányzik a latitude/longitude, megpróbálja bepótolni
+- lekéri az aktuális hőmérsékletet
+- létrehoz egy új sort a `weather_measurements` táblában
+
+### Dashboard grafikonok
+
+A Dashboard oldalon városonként:
+
+- “Latest Temperature” → a legutóbbi mért érték
+- Grafikon → az utolsó max 10 mérés (időbélyeg + hőmérséklet)
+
+---
+
+## Fontos fájlok / belső működés (gyors térkép)
+
+- Város CRUD + geokódolás:
+	- `app/Http/Controllers/web/CityController.php`
+	- `app/Services/GeocodingService.php`
+	- `resources/views/cities.blade.php`
+
+- Dashboard + chart adatok:
+	- `app/Http/Controllers/web/DashboardController.php`
+	- `resources/views/dashboard.blade.php`
+
+- Mérések API:
+	- `app/Http/Controllers/api/WeatherMeasurementController.php`
+	- `routes/api.php`
+
+- Frissítő parancs:
+	- `app/Console/Commands/WeatherUpdate.php`
+
+- Route-ok:
+	- `routes/web.php`
+
+---
+
+## Hibaelhárítás
+
+### 500-as hiba / Blade parse error
+
+Ha a dashboard view-ban komplex PHP kifejezéseket közvetlenül `@json(...)`-ba raksz, előfordulhat Blade parse hiba. Ilyenkor érdemes a JSON-hoz szükséges adatot a controllerben előkészíteni és csak egy egyszerű `@json($valami)`-t használni.
+
+### Nincs adat a grafikonon
+
+- Ellenőrizd, hogy van-e mérés: futtasd `php artisan weather:update`
+- Nézd meg az adatbázist (SQLite esetén a `database/database.sqlite` fájlt)
+
+### Geokódolás nem talál várost
+
+- Próbálj meg pontosabb városnevet (angol/ismert névformát)
+- Ellenőrizd az internetkapcsolatot (külső Open‑Meteo API hívás)
+
+---
+
+
+
+
