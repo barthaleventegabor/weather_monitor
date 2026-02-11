@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class City extends Model
 {
-    public function measurements()
+    use HasFactory;
+
+    protected $fillable = ['name', 'country', 'latitude', 'longitude'];
+
+    public function weatherMeasurements()
     {
         return $this->hasMany(WeatherMeasurement::class);
     }
