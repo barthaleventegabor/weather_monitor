@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cities', function (Blueprint $table) {
+       Schema::create('cities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('country')->nullable();
+            $table->string('country');
             $table->decimal('latitude', 8, 6)->nullable();
             $table->decimal('longitude', 9, 6)->nullable();
             $table->timestamps();
+
+            $table->unique(['name', 'country']); 
         });
     }
 

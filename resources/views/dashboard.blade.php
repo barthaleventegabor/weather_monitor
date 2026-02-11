@@ -8,6 +8,12 @@
 
     <h1 class="mb-4">Weather Dashboard</h1>
 
+    <div class="mb-4 d-flex gap-2">
+        <a href="{{ route('cities.index') }}" class="btn btn-outline-primary">Cities</a>
+        <a href="{{ route('dashboard') }}" class="btn btn-primary">Weather Dashboard</a>
+    </div>
+
+    {{-- Validation errors --}}
     @if ($errors->any())
         <div class="alert alert-danger">
             <ul class="mb-0">
@@ -18,27 +24,14 @@
         </div>
     @endif
 
+    {{-- Success message --}}
     @if(session('success'))
         <div class="alert alert-success">
             {{ session('success') }}
         </div>
     @endif
 
-    <form action="{{ route('cities.store') }}" method="POST" class="mb-4">
-        @csrf
-        <div class="row g-2">
-            <div class="col-md-4">
-                <input type="text" name="name" class="form-control" placeholder="City Name" value="{{ old('name') }}">
-            </div>
-            <div class="col-md-4">
-                <input type="text" name="country" class="form-control" placeholder="Country" value="{{ old('country') }}">
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary w-100">Add City</button>
-            </div>
-        </div>
-    </form>
-
+    {{-- Cities Table --}}
     <table class="table table-bordered">
         <thead class="table-primary">
             <tr>
@@ -66,6 +59,62 @@
         </tbody>
     </table>
 
+    <div class="mt-5">
+        @foreach($cities as $city)
+            <div class="mb-5">
+                <h4 class="mb-3">{{ $city->name }}, {{ $city->country }}</h4>
+
+                @if($city->weatherMeasurements->isEmpty())
+                    <div class="text-muted">No data</div>
+                @else
+                    <div style="height: 210px;">
+                        <canvas id="chart-city-{{ $city->id }}"></canvas>
+                    </div>
+                @endif
+            </div>
+        @endforeach
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const citySeries = @json($citySeries);
+
+            citySeries.forEach((series) => {
+                const canvas = document.getElementById(`chart-city-${series.id}`);
+                if (!canvas) return;
+
+                const labels = [...series.labels].reverse();
+                const temps = [...series.temps].reverse();
+
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: `${series.name} temperature (°C)`,
+                            data: temps,
+                            borderWidth: 2,
+                            tension: 0.25,
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true },
+                        },
+                        scales: {
+                            y: { title: { display: true, text: '°C' } },
+                            x: { title: { display: true, text: 'Time' } },
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
