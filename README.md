@@ -23,7 +23,7 @@ Az alkalmazás külső API-kat használ az Open‑Meteo szolgáltatásból:
 ### Időjárás mérések (Weather measurements)
 
 - Mérések tárolása városonként (hőmérséklet + timestamp)
-- `weather:update` Artisan parancs: minden városhoz lekéri az aktuális hőmérsékletet és elmenti
+- `php artisan weather:update` Artisan parancs: minden városhoz lekéri az aktuális hőmérsékletet és elmenti
 	- Ha egy városhoz nincs elmentett koordináta, először geokódolással bepótolja
 
 ### Weather Dashboard
@@ -76,10 +76,10 @@ Kapcsolat:
 
 - PHP 8.2+
 - Laravel 12
-- SQLite (alapértelmezett `.env.example` szerint)
+- MySQL (alapértelmezett `.env.example` szerint)
 - Frontend: a jelenlegi oldalak Bootstrap 5 CDN-t használnak
 - Chart: Chart.js CDN
-- Vite + Tailwind be van készítve a projektben (a build pipeline része), de a fenti oldalak megjelenése jelenleg Bootstrap alapú.
+
 
 ---
 
@@ -90,6 +90,11 @@ Kapcsolat:
 ```bash
 composer install
 ```
+Nem egyező verziók esetén
+```bash
+composer update
+```
+
 
 ### 2) `.env` létrehozása és app key generálás
 
@@ -107,7 +112,6 @@ php artisan key:generate
 php artisan migrate
 ```
 
-Megjegyzés: a projektben a session/cache/queue driver is adatbázisra van állítva, ezért a migrációk szükségesek.
 
 ### 4) (Opcionális) seed
 
